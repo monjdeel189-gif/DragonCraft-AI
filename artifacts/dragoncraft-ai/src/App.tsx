@@ -37,8 +37,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { supabase } from '@/lib/supabase';
 import NotFound from '@/pages/not-found';
 import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
+import type { Session } from '@supabase/supabase-js';
 
 const queryClient = new QueryClient();
 
@@ -120,7 +122,7 @@ function DragonIllustration({ color = '#ff7058', accent = '#ffc857' }: { color?:
   );
 }
 
-function Header({ onSignIn, onForge }: { onSignIn: () => void; onForge: () => void }) {
+function Header({ onSignIn, onForge, signedIn }: { onSignIn: () => void; onForge: () => void; signedIn: boolean }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const closeMobile = () => setMobileOpen(false);
   return (
@@ -140,7 +142,7 @@ function Header({ onSignIn, onForge }: { onSignIn: () => void; onForge: () => vo
           ))}
         </nav>
         <div className="hidden items-center gap-3 md:flex">
-          <button onClick={onSignIn} className="px-3 py-2 font-mono text-[10px] uppercase tracking-[.12em] text-[#d8cce2] transition-colors hover:text-[#fff2d5]" data-testid="button-sign-in">Sign in</button>
+          <button onClick={onSignIn} className="px-3 py-2 font-mono text-[10px] uppercase tracking-[.12em] text-[#d8cce2] transition-colors hover:text-[#fff2d5]" data-testid="button-sign-in">{signedIn ? 'Account' : 'Sign in'}</button>
           <button onClick={onForge} className="dc-btn-primary rounded-lg px-4 py-2.5 font-mono text-[10px] font-bold uppercase tracking-[.12em]" data-testid="button-header-forge">Enter the forge <ArrowRight size={13} /></button>
         </div>
         <button onClick={() => setMobileOpen(!mobileOpen)} className="rounded-lg border border-[#fff2d5]/15 p-2 text-[#fff2d5] md:hidden" aria-label="Toggle navigation" data-testid="button-mobile-menu">
@@ -154,7 +156,7 @@ function Header({ onSignIn, onForge }: { onSignIn: () => void; onForge: () => vo
             <div className="grid gap-1">
               {['Studio', 'Realms', 'Gallery', 'Pricing'].map((item) => <a onClick={closeMobile} key={item} href={`#${item.toLowerCase()}`} className="rounded-lg px-3 py-3 font-mono text-[11px] uppercase tracking-[.14em] text-[#d8cce2] hover:bg-[#fff2d5]/10" data-testid={`link-mobile-nav-${item.toLowerCase()}`}>{item}</a>)}
               <div className="mt-2 grid grid-cols-2 gap-2 border-t border-[#fff2d5]/10 pt-3">
-                <button onClick={() => { closeMobile(); onSignIn(); }} className="rounded-lg border border-[#fff2d5]/20 py-3 font-mono text-[10px] uppercase tracking-[.1em] text-[#fff2d5]" data-testid="button-mobile-sign-in">Sign in</button>
+                <button onClick={() => { closeMobile(); onSignIn(); }} className="rounded-lg border border-[#fff2d5]/20 py-3 font-mono text-[10px] uppercase tracking-[.1em] text-[#fff2d5]" data-testid="button-mobile-sign-in">{signedIn ? 'Account' : 'Sign in'}</button>
                 <button onClick={() => { closeMobile(); onForge(); }} className="dc-btn-primary rounded-lg py-3 font-mono text-[10px] uppercase tracking-[.1em]" data-testid="button-mobile-forge">Forge a world</button>
               </div>
             </div>
@@ -217,7 +219,7 @@ function Marquee() {
   return <div className="overflow-hidden border-y border-[#fff2d5]/10 bg-[#10071f]/55 py-4"><div className="dc-marquee flex w-max">{[...words, ...words].map((word, index) => <div key={`${word}-${index}`} className="flex items-center gap-7 px-5"><span className="font-mono text-[10px] uppercase tracking-[.19em] text-[#a89bbf]">{word}</span><span className="text-[#f20f75]">+</span></div>)}</div></div>;
 }
 
-function StudioSection({ onForge }: { onForge: () => void }) {
+function StudioSection({ onForge, requireAccess }: { onForge: () => void; requireAccess: (authorizedAction: () => void) => void }) {
   const [prompt, setPrompt] = useState('');
   const [generated, setGenerated] = useState(false);
   return (
@@ -225,7 +227,7 @@ function StudioSection({ onForge }: { onForge: () => void }) {
       <div className="dc-section">
         <Reveal><div className="mb-12 flex flex-col justify-between gap-5 md:flex-row md:items-end"><div><p className="dc-kicker">01 / The studio</p><h2 className="mt-4 max-w-[630px] font-display text-4xl font-bold leading-[.96] tracking-[-.06em] text-[#fff2d5] sm:text-6xl">Your rough idea.<br /><span className="text-[#a89bbf]">Our strange little superpower.</span></h2></div><p className="max-w-[280px] text-sm leading-6 text-[#a89bbf]">No prompt gymnastics. Just tell us what you are building, and we will find the realm it deserves.</p></div></Reveal>
         <div className="grid gap-4 lg:grid-cols-[1.03fr_.97fr]">
-          <Reveal className="h-full"><div className="dc-glass-strong relative flex h-full min-h-[390px] flex-col overflow-hidden rounded-3xl p-6 sm:p-8"><div className="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-[#f20f75]/15 blur-3xl" /><div className="relative flex items-center justify-between"><div className="flex items-center gap-2"><span className="rounded-md border border-[#ffc857]/30 bg-[#ffc857]/10 p-1.5 text-[#ffc857]"><Sparkles size={14} /></span><span className="font-mono text-[10px] uppercase tracking-[.15em] text-[#fff2d5]">Signal forge</span></div><span className="font-mono text-[9px] text-[#a89bbf]">v.2.4</span></div><div className="relative mt-14"><p className="font-display text-2xl leading-tight text-[#fff2d5] sm:text-3xl">“Make something for<br /><span className="text-[#ffc857]">people who notice.”</span></p><p className="mt-4 max-w-[360px] text-sm leading-6 text-[#a89bbf]">Describe your product in one sentence. The forge will shape the signal, voice, and visual atmosphere around it.</p></div><div className="relative mt-auto pt-10"><div className="flex items-center gap-2 rounded-xl border border-[#fff2d5]/14 bg-[#10071f]/45 p-2 pl-4"><input value={prompt} onChange={(event) => { setPrompt(event.target.value); setGenerated(false); }} onKeyDown={(event) => { if (event.key === 'Enter' && prompt.trim()) setGenerated(true); }} placeholder="A calmer way to manage team energy..." className="min-w-0 flex-1 bg-transparent text-sm text-[#fff2d5] outline-none placeholder:text-[#77698e]" data-testid="input-studio-prompt" /><button onClick={() => prompt.trim() && setGenerated(true)} className="dc-btn-primary rounded-lg p-3" aria-label="Generate realm" data-testid="button-generate-realm"><ArrowRight size={16} /></button></div>{generated && <motion.p initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="mt-3 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[.08em] text-[#79dbd1]" data-testid="status-studio-generated"><CheckCircle2 size={13} /> Signal captured. Your realm is taking shape.</motion.p>}</div></div></Reveal>
+          <Reveal className="h-full"><div className="dc-glass-strong relative flex h-full min-h-[390px] flex-col overflow-hidden rounded-3xl p-6 sm:p-8"><div className="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-[#f20f75]/15 blur-3xl" /><div className="relative flex items-center justify-between"><div className="flex items-center gap-2"><span className="rounded-md border border-[#ffc857]/30 bg-[#ffc857]/10 p-1.5 text-[#ffc857]"><Sparkles size={14} /></span><span className="font-mono text-[10px] uppercase tracking-[.15em] text-[#fff2d5]">Signal forge</span></div><span className="font-mono text-[9px] text-[#a89bbf]">v.2.4</span></div><div className="relative mt-14"><p className="font-display text-2xl leading-tight text-[#fff2d5] sm:text-3xl">“Make something for<br /><span className="text-[#ffc857]">people who notice.”</span></p><p className="mt-4 max-w-[360px] text-sm leading-6 text-[#a89bbf]">Describe your product in one sentence. The forge will shape the signal, voice, and visual atmosphere around it.</p></div><div className="relative mt-auto pt-10"><div className="flex items-center gap-2 rounded-xl border border-[#fff2d5]/14 bg-[#10071f]/45 p-2 pl-4"><input value={prompt} onChange={(event) => { setPrompt(event.target.value); setGenerated(false); }} onKeyDown={(event) => { if (event.key === 'Enter' && prompt.trim()) requireAccess(() => setGenerated(true)); }} placeholder="A calmer way to manage team energy..." className="min-w-0 flex-1 bg-transparent text-sm text-[#fff2d5] outline-none placeholder:text-[#77698e]" data-testid="input-studio-prompt" /><button onClick={() => prompt.trim() && requireAccess(() => setGenerated(true))} className="dc-btn-primary rounded-lg p-3" aria-label="Generate realm" data-testid="button-generate-realm"><ArrowRight size={16} /></button></div>{generated && <motion.p initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="mt-3 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[.08em] text-[#79dbd1]" data-testid="status-studio-generated"><CheckCircle2 size={13} /> Signal captured. Your realm is taking shape.</motion.p>}</div></div></Reveal>
           <Reveal delay={.12}><div className="grid h-full gap-4 sm:grid-cols-2 lg:grid-cols-1"><div className="dc-glass rounded-3xl p-6 sm:p-7"><div className="flex items-start justify-between"><div><p className="dc-kicker">The ritual</p><h3 className="mt-3 font-display text-2xl font-bold text-[#fff2d5]">Three passes.<br />Zero blank canvas.</h3></div><Palette className="text-[#ff7058]" size={25} /></div><div className="mt-7 grid grid-cols-3 gap-2">{['Listen', 'Shape', 'Launch'].map((step, index) => <div key={step} className="border-t border-[#fff2d5]/20 pt-3"><span className="font-mono text-[9px] text-[#ffc857]">0{index + 1}</span><p className="mt-2 font-display text-sm text-[#fff2d5]">{step}</p></div>)}</div></div><div className="dc-glass rounded-3xl p-6 sm:p-7"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f20f75]/15 text-[#f20f75]"><Zap size={18} /></div><div><p className="font-display text-lg text-[#fff2d5]">Built for momentum</p><p className="font-mono text-[9px] uppercase tracking-[.12em] text-[#a89bbf]">Average first draft: 11 min</p></div></div><div className="mt-7 flex items-end gap-2"><p className="font-display text-4xl text-[#ffc857]">7.4k</p><p className="mb-1 font-mono text-[10px] text-[#a89bbf]">launches this month</p></div><button onClick={onForge} className="mt-5 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[.13em] text-[#fff2d5] hover:text-[#ffc857]" data-testid="button-studio-open-forge">Open your forge <ArrowRight size={13} /></button></div></div></Reveal>
         </div>
       </div>
@@ -233,16 +235,18 @@ function StudioSection({ onForge }: { onForge: () => void }) {
   );
 }
 
-function FeatureSection({ onForge }: { onForge: () => void }) {
+function FeatureSection({ onForge, requireAccess }: { onForge: () => void; requireAccess: (authorizedAction: () => void) => void }) {
   const [listening, setListening] = useState(false);
   const [captured, setCaptured] = useState(false);
 
   const startListening = () => {
+    requireAccess(() => {
     setListening(true);
     window.setTimeout(() => {
       setListening(false);
       setCaptured(true);
     }, 1200);
+    });
   };
 
   return (
@@ -405,10 +409,25 @@ function PricingSection({ onChoose }: { onChoose: (plan: string) => void }) {
   return <section id="pricing" className="relative py-24 sm:py-32"><div className="dc-section"><Reveal><div className="flex flex-col justify-between gap-5 md:flex-row md:items-end"><div><p className="dc-kicker">06 / The offering</p><h2 className="mt-4 font-display text-4xl font-bold tracking-[-.06em] text-[#fff2d5] sm:text-6xl">Choose your<br /><span className="text-[#a89bbf]">starting spell.</span></h2></div><div className="flex items-center gap-2 rounded-full border border-[#79dbd1]/25 bg-[#79dbd1]/[.06] px-3 py-2 font-mono text-[9px] uppercase tracking-[.11em] text-[#79dbd1]"><LockKeyhole size={12} /> No card for the first flight</div></div></Reveal><div className="mx-auto mt-12 grid max-w-[920px] items-start gap-4 md:grid-cols-2">{plans.map((plan, index) => <Reveal key={plan.name} delay={index * .09}><div className={`relative rounded-3xl border p-6 sm:p-7 ${plan.featured ? 'border-[#f20f75]/70 bg-gradient-to-b from-[#63205e] to-[#2b1253] shadow-[0_20px_70px_rgba(242,15,117,.16)] md:-mt-5 md:pb-9' : 'border-[#fff2d5]/13 bg-[#2b1253]/32'}`}>{plan.featured && <div className="absolute -top-3 left-6 rounded-full bg-[#ffc857] px-3 py-1 font-mono text-[9px] font-bold uppercase tracking-[.12em] text-[#180c31]">Full access key</div>}<div className="flex items-start justify-between"><div><p className="font-mono text-[10px] uppercase tracking-[.15em] text-[#a89bbf]">{plan.name}</p><p className="mt-4 font-display text-4xl text-[#fff2d5]">{plan.price}<span className="font-sans text-sm text-[#a89bbf]">{plan.price !== 'Free' && ' / year'}</span></p></div><div className={`rounded-full p-2 ${plan.featured ? 'bg-[#f20f75]/20 text-[#ff7058]' : 'bg-[#fff2d5]/[.07] text-[#ffc857]'}`}><Zap size={16} /></div></div><p className="mt-5 min-h-12 text-sm leading-6 text-[#a89bbf]">{plan.copy}</p><div className="my-6 h-px bg-[#fff2d5]/10" /><ul className="space-y-3">{plan.features.map((feature) => <li key={feature} className="flex items-center gap-2 text-sm text-[#e1d7e3]"><Check size={14} className="text-[#79dbd1]" />{feature}</li>)}</ul><button onClick={() => onChoose(plan.name)} className={`mt-8 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-[.12em] ${plan.featured ? 'dc-btn-primary' : 'dc-btn-secondary'}`} data-testid={`button-pricing-${plan.name.toLowerCase().replaceAll(' ', '-')}`}>{plan.action} <ArrowRight size={14} /></button></div></Reveal>)}</div></div></section>;
 }
 
-function SignInModal({ onClose, onForge }: { onClose: () => void; onForge: () => void }) {
-  const [email, setEmail] = useState('');
-  const [sent, setSent] = useState(false);
-  return <div className="dc-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="signin-title" onMouseDown={(event) => event.target === event.currentTarget && onClose()}><motion.div initial={{ opacity: 0, scale: .96, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="dc-glass-strong relative w-full max-w-[430px] rounded-3xl p-7 sm:p-9"><button onClick={onClose} className="absolute right-4 top-4 rounded-lg p-2 text-[#a89bbf] hover:bg-[#fff2d5]/10 hover:text-[#fff2d5]" aria-label="Close sign in" data-testid="button-close-sign-in"><X size={17} /></button><DragonMark /><p className="dc-kicker mt-7">Your realm is waiting</p><h2 id="signin-title" className="mt-3 font-display text-3xl font-bold tracking-[-.05em] text-[#fff2d5]">Enter the forge.</h2><p className="mt-3 text-sm leading-6 text-[#a89bbf]">Save your realms, keep your sparks, and come back when the next idea hits.</p>{sent ? <div className="mt-7 rounded-2xl border border-[#79dbd1]/25 bg-[#79dbd1]/[.08] p-5" data-testid="status-sign-in-sent"><CheckCircle2 className="text-[#79dbd1]" size={23} /><p className="mt-3 font-display text-lg text-[#fff2d5]">Check your inbox.</p><p className="mt-1 text-sm text-[#a89bbf]">A magic link is on its way to {email}.</p><button onClick={onForge} className="mt-5 font-mono text-[10px] uppercase tracking-[.12em] text-[#ffc857]" data-testid="button-sent-start-forge">Keep exploring <ArrowRight size={13} className="ml-1 inline" /></button></div> : <><button onClick={() => setSent(true)} className="mt-7 flex w-full items-center justify-center gap-3 rounded-xl border border-[#fff2d5]/20 bg-[#fff2d5]/[.07] px-4 py-3.5 font-mono text-[10px] uppercase tracking-[.12em] text-[#fff2d5] hover:bg-[#fff2d5]/[.12]" data-testid="button-google-sign-in"><Globe2 size={16} /> Continue with Google</button><div className="my-5 flex items-center gap-3"><div className="h-px flex-1 bg-[#fff2d5]/10" /><span className="font-mono text-[9px] uppercase tracking-[.13em] text-[#77698e]">or magic link</span><div className="h-px flex-1 bg-[#fff2d5]/10" /></div><div className="flex gap-2"><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@yourcompany.com" className="dc-input rounded-xl px-4 py-3 text-sm placeholder:text-[#77698e]" data-testid="input-sign-in-email" /><button onClick={() => email.includes('@') && setSent(true)} className="dc-btn-primary rounded-xl px-4" aria-label="Send magic link" data-testid="button-send-magic-link"><Send size={16} /></button></div><p className="mt-5 text-center font-mono text-[9px] leading-5 text-[#77698e]">By entering, you agree to our terms of creative mischief.</p></>}</motion.div></div>;
+function SignInModal({
+  onClose,
+  onForge,
+  session,
+  loading,
+  error,
+  onGoogleSignIn,
+  onSignOut,
+}: {
+  onClose: () => void;
+  onForge: () => void;
+  session: Session | null;
+  loading: boolean;
+  error: string;
+  onGoogleSignIn: () => void;
+  onSignOut: () => void;
+}) {
+  const displayName = session?.user.user_metadata?.full_name || session?.user.email || 'DragonCraft member';
+  return <div className="dc-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="signin-title" onMouseDown={(event) => event.target === event.currentTarget && onClose()}><motion.div initial={{ opacity: 0, scale: .96, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="dc-glass-strong relative w-full max-w-[430px] rounded-3xl p-7 sm:p-9"><button onClick={onClose} className="absolute right-4 top-4 rounded-lg p-2 text-[#a89bbf] hover:bg-[#fff2d5]/10 hover:text-[#fff2d5]" aria-label="Close sign in" data-testid="button-close-sign-in"><X size={17} /></button><DragonMark /><p className="dc-kicker mt-7">{session ? 'Your signal is synced' : 'Your realm is waiting'}</p><h2 id="signin-title" className="mt-3 font-display text-3xl font-bold tracking-[-.05em] text-[#fff2d5]">{session ? 'Welcome back.' : 'Enter the forge.'}</h2><p className="mt-3 text-sm leading-6 text-[#a89bbf]">{session ? `Signed in as ${displayName}. Your protected tools are unlocked.` : 'Sign in with Google to save your realms, keep your sparks, and use the AI forge.'}</p>{session ? <div className="mt-7 rounded-2xl border border-[#79dbd1]/25 bg-[#79dbd1]/[.08] p-5" data-testid="status-signed-in"><CheckCircle2 className="text-[#79dbd1]" size={23} /><p className="mt-3 font-display text-lg text-[#fff2d5]">Access granted.</p><p className="mt-1 text-sm text-[#a89bbf]">Your Logo Forge, Web Architect, voice tools, and Forge Guide are ready.</p><div className="mt-5 flex gap-2"><button onClick={onForge} className="dc-btn-primary flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 font-mono text-[10px] uppercase tracking-[.12em]" data-testid="button-signed-in-start-forge">Open the forge <ArrowRight size={13} /></button><button onClick={onSignOut} className="rounded-xl border border-[#fff2d5]/20 px-4 py-3 font-mono text-[10px] uppercase tracking-[.12em] text-[#a89bbf] hover:text-[#fff2d5]" data-testid="button-sign-out">Sign out</button></div></div> : <><button onClick={onGoogleSignIn} disabled={loading} className="mt-7 flex w-full items-center justify-center gap-3 rounded-xl border border-[#fff2d5]/20 bg-[#fff2d5]/[.07] px-4 py-3.5 font-mono text-[10px] uppercase tracking-[.12em] text-[#fff2d5] transition-colors hover:bg-[#fff2d5]/[.12] disabled:cursor-wait disabled:opacity-60" data-testid="button-google-sign-in"><Globe2 size={16} /> {loading ? 'Connecting to Google...' : 'Continue with Google'}</button>{error && <p className="mt-4 rounded-xl border border-[#ff7058]/30 bg-[#ff7058]/[.08] p-3 text-xs leading-5 text-[#ffb29c]" role="alert" data-testid="status-auth-error">{error}</p>}<p className="mt-5 text-center font-mono text-[9px] leading-5 text-[#77698e]">Google sign-in is required before using DragonCraft AI generation tools.</p></>}</motion.div></div>;
 }
 
 function ForgeModal({ realm, onClose, onSelectRealm }: { realm: Realm; onClose: () => void; onSelectRealm: (realm: Realm) => void }) {
@@ -594,23 +613,71 @@ function GalleryModal({ index, onClose, onMove }: { index: number; onClose: () =
   return <div className="dc-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" onMouseDown={(event) => event.target === event.currentTarget && onClose()}><motion.div initial={{ opacity: 0, scale: .95 }} animate={{ opacity: 1, scale: 1 }} className={`relative min-h-[430px] w-full max-w-[760px] overflow-hidden rounded-3xl border border-[#fff2d5]/20 p-7 ${item.tone === 'rose' ? 'bg-[#612151]' : item.tone === 'sun' ? 'bg-[#8d3e38]' : item.tone === 'aqua' ? 'bg-[#174b59]' : 'bg-[#39216b]'}`}><div className="absolute inset-0 opacity-70" style={{ background: item.tone === 'rose' ? 'radial-gradient(circle at 76% 22%, #ff9b84, transparent 24%), linear-gradient(135deg, transparent 34%, #2a103f 35%, #ca3e78 72%, #ffc857)' : item.tone === 'sun' ? 'radial-gradient(circle at 48% 24%, #ffc857, transparent 23%), linear-gradient(135deg, #e04472, #ff9b57 55%, #703373)' : item.tone === 'aqua' ? 'radial-gradient(circle at 75% 25%, #79dbd1, transparent 23%), linear-gradient(145deg, #173565, #147b82 55%, #e16b68)' : 'radial-gradient(circle at 30% 35%, #f20f75, transparent 22%), linear-gradient(135deg, #17123e, #5f3ba3 60%, #ff7058)' }} /><button onClick={onClose} className="absolute right-4 top-4 z-10 rounded-lg border border-[#fff2d5]/20 bg-[#180c31]/30 p-2 text-[#fff2d5]" aria-label="Close gallery" data-testid="button-close-gallery"><X size={17} /></button><div className="relative z-10 flex min-h-[370px] flex-col justify-end"><p className="font-mono text-[10px] uppercase tracking-[.15em] text-[#fff2d5]/75">{item.type} / {item.tag}</p><h2 className="mt-3 max-w-[540px] font-display text-4xl leading-[.95] text-[#fff2d5] sm:text-6xl">{item.title}</h2><p className="mt-5 max-w-[400px] text-sm leading-6 text-[#fff2d5]/75">{item.description}</p><div className="mt-7 flex items-center justify-between"><div className="flex gap-2"><button onClick={() => onMove((index - 1 + galleryItems.length) % galleryItems.length)} className="rounded-full border border-[#fff2d5]/25 p-3 text-[#fff2d5] hover:bg-[#fff2d5]/10" aria-label="Previous project" data-testid="button-gallery-prev"><ChevronLeft size={16} /></button><button onClick={() => onMove((index + 1) % galleryItems.length)} className="rounded-full border border-[#fff2d5]/25 p-3 text-[#fff2d5] hover:bg-[#fff2d5]/10" aria-label="Next project" data-testid="button-gallery-next"><ChevronRight size={16} /></button></div><span className="font-mono text-[10px] text-[#fff2d5]/70">{String(index + 1).padStart(2, '0')} / {String(galleryItems.length).padStart(2, '0')}</span></div></div></motion.div></div>;
 }
 
-function Assistant() {
+function Assistant({ requireAccess }: { requireAccess: (authorizedAction: () => void) => void }) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [sent, setSent] = useState(false);
-  return <div className="fixed bottom-5 right-4 z-30 sm:bottom-7 sm:right-7"><AnimatePresence>{open && <motion.div initial={{ opacity: 0, y: 12, scale: .97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 12, scale: .97 }} className="dc-glass-strong mb-3 w-[calc(100vw-32px)] max-w-[330px] overflow-hidden rounded-2xl"><div className="flex items-center justify-between border-b border-[#fff2d5]/10 px-4 py-3"><div className="flex items-center gap-2"><div className="dc-pulse h-2 w-2 rounded-full bg-[#79dbd1]" /><p className="font-mono text-[10px] uppercase tracking-[.12em] text-[#fff2d5]">Forge guide</p></div><button onClick={() => setOpen(false)} className="text-[#a89bbf]" aria-label="Close forge guide" data-testid="button-close-assistant"><X size={14} /></button></div>{sent ? <div className="p-5"><CheckCircle2 className="text-[#79dbd1]" size={19} /><p className="mt-3 font-display text-lg text-[#fff2d5]">Signal received.</p><p className="mt-1 text-xs leading-5 text-[#a89bbf]">A real human will answer shortly.</p></div> : <div className="p-4"><p className="text-sm leading-6 text-[#d8cce2]">I can help you find the right realm. What are you building?</p><div className="mt-4 flex gap-2"><input value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Tell me the spark..." className="dc-input rounded-lg px-3 py-2 text-xs placeholder:text-[#77698e]" data-testid="input-assistant-message" /><button onClick={() => message.trim() && setSent(true)} className="dc-btn-primary rounded-lg px-3" aria-label="Send assistant message" data-testid="button-send-assistant"><Send size={14} /></button></div></div>}</motion.div>}</AnimatePresence><button onClick={() => setOpen(!open)} className="dc-btn-primary dc-pulse flex h-12 w-12 items-center justify-center rounded-full shadow-[0_10px_30px_rgba(242,15,117,.38)]" aria-label="Open forge guide" data-testid="button-open-assistant">{open ? <X size={19} /> : <MessageCircle size={19} />}</button></div>;
+  return <div className="fixed bottom-5 right-4 z-30 sm:bottom-7 sm:right-7"><AnimatePresence>{open && <motion.div initial={{ opacity: 0, y: 12, scale: .97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 12, scale: .97 }} className="dc-glass-strong mb-3 w-[calc(100vw-32px)] max-w-[330px] overflow-hidden rounded-2xl"><div className="flex items-center justify-between border-b border-[#fff2d5]/10 px-4 py-3"><div className="flex items-center gap-2"><div className="dc-pulse h-2 w-2 rounded-full bg-[#79dbd1]" /><p className="font-mono text-[10px] uppercase tracking-[.12em] text-[#fff2d5]">Forge guide</p></div><button onClick={() => setOpen(false)} className="text-[#a89bbf]" aria-label="Close forge guide" data-testid="button-close-assistant"><X size={14} /></button></div>{sent ? <div className="p-5"><CheckCircle2 className="text-[#79dbd1]" size={19} /><p className="mt-3 font-display text-lg text-[#fff2d5]">Signal received.</p><p className="mt-1 text-xs leading-5 text-[#a89bbf]">A real human will answer shortly.</p></div> : <div className="p-4"><p className="text-sm leading-6 text-[#d8cce2]">I can help you find the right realm. What are you building?</p><div className="mt-4 flex gap-2"><input value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Tell me the spark..." className="dc-input rounded-lg px-3 py-2 text-xs placeholder:text-[#77698e]" data-testid="input-assistant-message" /><button onClick={() => message.trim() && requireAccess(() => setSent(true))} className="dc-btn-primary rounded-lg px-3" aria-label="Send assistant message" data-testid="button-send-assistant"><Send size={14} /></button></div></div>}</motion.div>}</AnimatePresence><button onClick={() => setOpen(!open)} className="dc-btn-primary dc-pulse flex h-12 w-12 items-center justify-center rounded-full shadow-[0_10px_30px_rgba(242,15,117,.38)]" aria-label="Open forge guide" data-testid="button-open-assistant">{open ? <X size={19} /> : <MessageCircle size={19} />}</button></div>;
 }
 
 function Footer({ onSignIn }: { onSignIn: () => void }) {
   return <footer className="border-t border-[#fff2d5]/10 py-10"><div className="dc-section flex flex-col justify-between gap-8 md:flex-row md:items-end"><div><a href="#hero" className="flex items-center gap-3" data-testid="link-footer-brand"><DragonMark small /><span className="font-display text-sm font-bold tracking-[-.03em] text-[#fff2d5]">DRAGON<span className="text-[#ffc857]">CRAFT</span><sup className="ml-0.5 align-top font-mono text-[7px] text-[#f20f75]">AI</sup></span></a><p className="mt-4 max-w-[260px] text-xs leading-5 text-[#77698e]">A creative studio for founders with a world to build.</p></div><div className="flex flex-wrap items-center gap-x-6 gap-y-3"><a href="#studio" className="font-mono text-[9px] uppercase tracking-[.13em] text-[#a89bbf] hover:text-[#fff2d5]" data-testid="link-footer-studio">Studio</a><a href="#realms" className="font-mono text-[9px] uppercase tracking-[.13em] text-[#a89bbf] hover:text-[#fff2d5]" data-testid="link-footer-realms">Realms</a><button onClick={onSignIn} className="font-mono text-[9px] uppercase tracking-[.13em] text-[#a89bbf] hover:text-[#fff2d5]" data-testid="button-footer-sign-in">Sign in</button><a href="https://twitter.com" target="_blank" rel="noreferrer" className="text-[#a89bbf] hover:text-[#ffc857]" aria-label="DragonCraft on Twitter" data-testid="link-footer-twitter"><Twitter size={16} /></a></div><p className="font-mono text-[9px] uppercase tracking-[.11em] text-[#77698e]">© 2025 DragonCraft AI</p></div></footer>;
 }
 
+type AuthIntent = 'forge' | 'studio' | 'voice' | 'assistant' | 'trial';
+
 function Home() {
   const [activeRealm, setActiveRealm] = useState(realms[0]);
+  const [session, setSession] = useState<Session | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState('');
   const [signInOpen, setSignInOpen] = useState(false);
   const [forgeOpen, setForgeOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
   const [toast, setToast] = useState('');
+
+  const resumePendingAction = (nextSession: Session | null) => {
+    setSession(nextSession);
+    setAuthLoading(false);
+    if (!nextSession) return;
+
+    const intent = window.sessionStorage.getItem('dragoncraft-auth-intent') as AuthIntent | null;
+    if (!intent) return;
+    window.sessionStorage.removeItem('dragoncraft-auth-intent');
+    setSignInOpen(false);
+
+    if (intent === 'forge') {
+      setForgeOpen(true);
+    } else if (intent === 'trial') {
+      setToast('Google verified — your 60-day flight is ready.');
+      document.getElementById('hero')?.scrollIntoView({ behavior: 'smooth' });
+    } else if (intent === 'studio') {
+      setToast('Google verified — the Signal Forge is unlocked.');
+      document.getElementById('studio')?.scrollIntoView({ behavior: 'smooth' });
+    } else if (intent === 'voice') {
+      setToast('Google verified — Voice-to-Design is unlocked.');
+    } else {
+      setToast('Google verified — Forge Guide is unlocked.');
+    }
+  };
+
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (!mounted) return;
+      if (error) setAuthError(error.message);
+      resumePendingAction(data.session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (mounted) resumePendingAction(nextSession);
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.add('dark');
@@ -621,34 +688,75 @@ function Home() {
     return undefined;
   }, [toast]);
 
+  const openSignIn = () => {
+    window.sessionStorage.removeItem('dragoncraft-auth-intent');
+    setAuthError('');
+    setSignInOpen(true);
+  };
+
+  const requestAuth = (intent: AuthIntent, authorizedAction: () => void) => {
+    if (session) {
+      authorizedAction();
+      return;
+    }
+    window.sessionStorage.setItem('dragoncraft-auth-intent', intent);
+    setAuthError('');
+    setSignInOpen(true);
+  };
+
+  const handleGoogleSignIn = async () => {
+    setAuthError('');
+    setAuthLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.href },
+    });
+    if (error) {
+      setAuthError(error.message);
+      setAuthLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      setToast(`Sign out failed: ${error.message}`);
+      return;
+    }
+    setSignInOpen(false);
+    setToast('You have left the realm. Come back soon.');
+  };
+
   const choosePlan = (plan: string) => {
     if (plan === 'Novice Dragon') {
-      setToast('Novice Dragon mode unlocked — your 60-day flight is free.');
-      document.getElementById('hero')?.scrollIntoView({ behavior: 'smooth' });
+      requestAuth('trial', () => {
+        setToast('Novice Dragon mode unlocked — your 60-day flight is free.');
+        document.getElementById('hero')?.scrollIntoView({ behavior: 'smooth' });
+      });
     } else {
-      setSignInOpen(true);
+      openSignIn();
     }
   };
 
   return <div className="dc-page dc-noise min-h-[100dvh]">
-    <Header onSignIn={() => setSignInOpen(true)} onForge={() => setForgeOpen(true)} />
+    <Header signedIn={Boolean(session)} onSignIn={openSignIn} onForge={() => requestAuth('forge', () => setForgeOpen(true))} />
     <main>
-      <Hero realm={activeRealm} setRealm={setActiveRealm} onForge={() => setForgeOpen(true)} onSignIn={() => setSignInOpen(true)} />
+      <Hero realm={activeRealm} setRealm={setActiveRealm} onForge={() => requestAuth('forge', () => setForgeOpen(true))} onSignIn={openSignIn} />
       <Marquee />
-      <StudioSection onForge={() => setForgeOpen(true)} />
-      <FeatureSection onForge={() => setForgeOpen(true)} />
+      <StudioSection onForge={() => requestAuth('forge', () => setForgeOpen(true))} requireAccess={(action) => requestAuth('studio', action)} />
+      <FeatureSection onForge={() => requestAuth('forge', () => setForgeOpen(true))} requireAccess={(action) => requestAuth('voice', action)} />
       <RealmsSection activeRealm={activeRealm} onSelect={setActiveRealm} />
       <BattleSection />
       <EvolutionSection />
       <GallerySection onSelect={setGalleryIndex} />
       <PricingSection onChoose={choosePlan} />
-      <section className="relative overflow-hidden py-28 sm:py-40"><div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(242,15,117,.18),transparent_37%)]" /><div className="dc-section relative text-center"><Reveal><p className="dc-kicker">07 / Your turn</p><h2 className="mx-auto mt-5 max-w-[850px] font-display text-5xl font-bold leading-[.89] tracking-[-.08em] text-[#fff2d5] sm:text-8xl">Make the internet<br /><span className="dc-sunset-text">look twice.</span></h2><p className="mx-auto mt-7 max-w-[400px] text-sm leading-6 text-[#a89bbf]">The next memorable company starts as a sentence. Bring yours.</p><button onClick={() => setForgeOpen(true)} className="dc-btn-primary mt-8 rounded-xl px-6 py-4 font-mono text-[11px] font-bold uppercase tracking-[.13em]" data-testid="button-final-forge">Enter the forge <ArrowRight size={15} /></button></Reveal></div></section>
+      <section className="relative overflow-hidden py-28 sm:py-40"><div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(242,15,117,.18),transparent_37%)]" /><div className="dc-section relative text-center"><Reveal><p className="dc-kicker">07 / Your turn</p><h2 className="mx-auto mt-5 max-w-[850px] font-display text-5xl font-bold leading-[.89] tracking-[-.08em] text-[#fff2d5] sm:text-8xl">Make the internet<br /><span className="dc-sunset-text">look twice.</span></h2><p className="mx-auto mt-7 max-w-[400px] text-sm leading-6 text-[#a89bbf]">The next memorable company starts as a sentence. Bring yours.</p><button onClick={() => requestAuth('forge', () => setForgeOpen(true))} className="dc-btn-primary mt-8 rounded-xl px-6 py-4 font-mono text-[11px] font-bold uppercase tracking-[.13em]" data-testid="button-final-forge">Enter the forge <ArrowRight size={15} /></button></Reveal></div></section>
     </main>
-    <Footer onSignIn={() => setSignInOpen(true)} />
+    <Footer onSignIn={openSignIn} />
     <a href="https://wa.me/213652742367?text=Hello%20DragonCraft%20Team%21%20I%20need%20support%20with%20my%20project." target="_blank" rel="noreferrer" className="fixed bottom-5 left-4 z-30 flex items-center gap-2 rounded-full border border-[#79dbd1]/30 bg-[#173f46]/85 px-3 py-2.5 text-[#79dbd1] shadow-lg backdrop-blur-md transition-transform hover:-translate-y-1 sm:bottom-7 sm:left-7" data-testid="link-whatsapp-support"><MessageCircle size={16} /><span className="hidden font-mono text-[9px] uppercase tracking-[.1em] sm:inline">Talk to a human</span></a>
-    <Assistant />
+    <Assistant requireAccess={(action) => requestAuth('assistant', action)} />
     {toast && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-full border border-[#ffc857]/35 bg-[#2b1253] px-4 py-3 font-mono text-[10px] uppercase tracking-[.08em] text-[#ffc857] shadow-lg" data-testid="status-toast">{toast}</motion.div>}
-    <AnimatePresence>{signInOpen && <SignInModal onClose={() => setSignInOpen(false)} onForge={() => { setSignInOpen(false); setForgeOpen(true); }} />}</AnimatePresence>
+    <AnimatePresence>{signInOpen && <SignInModal session={session} loading={authLoading} error={authError} onGoogleSignIn={handleGoogleSignIn} onSignOut={handleSignOut} onClose={() => setSignInOpen(false)} onForge={() => { setSignInOpen(false); requestAuth('forge', () => setForgeOpen(true)); }} />}</AnimatePresence>
     <AnimatePresence>{forgeOpen && <ForgeModal realm={activeRealm} onClose={() => setForgeOpen(false)} onSelectRealm={setActiveRealm} />}</AnimatePresence>
     <AnimatePresence>{galleryIndex !== null && <GalleryModal index={galleryIndex} onClose={() => setGalleryIndex(null)} onMove={setGalleryIndex} />}</AnimatePresence>
   </div>;

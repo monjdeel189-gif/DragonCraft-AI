@@ -29,7 +29,7 @@ Cyber-anime creative studio for forging brand identities, landing pages, and lau
 
 ## Architecture decisions
 
-- The first release is a presentation-first React/Vite experience so the brand and interaction model can be validated before connecting generation, auth, and billing providers.
+- The first release is a presentation-first React/Vite experience; Supabase Auth is now connected while generation persistence and billing remain separate integration work.
 - The interface keeps the two core workflows visible as separate realms: Dragon Logo Forge for identity and Dragon Web Architect for conversion surfaces.
 - The initial interaction layer uses local React state for the forge, realm scanner, battle comparison, evolution story, gallery, voice-to-design demo, and assistant so every obvious click is meaningful without placeholder routes.
 
@@ -43,7 +43,7 @@ DragonCraft AI helps founders turn a rough idea into a distinctive brand world. 
 
 ## Gotchas
 
-- The current Google sign-in, generation, export, and tier checkout actions are intentionally UI flows; connect Supabase/Google OAuth and persistence before treating them as production authentication or billing.
+- Google OAuth is invoked through Supabase Auth from the browser. Enable the Google provider and add the preview/deployed callback URLs in Supabase Auth URL Configuration before testing sign-in outside the local preview.
 
 ## Pointers
 
