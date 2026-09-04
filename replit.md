@@ -1,6 +1,6 @@
-# [Project name]
+# DragonCraft AI
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Cyber-anime creative studio for forging brand identities, landing pages, and launch-ready worlds from one sharp idea.
 
 ## Run & Operate
 
@@ -22,23 +22,28 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/dragoncraft-ai/src/App.tsx` — presentation-first product surface and interactive demo state
+- `artifacts/dragoncraft-ai/src/index.css` — DragonCraft theme tokens, glass/sunset utilities, and motion styles
+- `artifacts/dragoncraft-ai/package.json` — web artifact scripts and frontend dependencies
+- `artifacts/api-server` — shared API service scaffold, currently reserved for future persistence and auth routes
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The first release is a presentation-first React/Vite experience so the brand and interaction model can be validated before connecting generation, auth, and billing providers.
+- The interface keeps the two core workflows visible as separate realms: Dragon Logo Forge for identity and Dragon Web Architect for conversion surfaces.
+- The initial interaction layer uses local React state for the forge, realm scanner, battle comparison, evolution story, gallery, voice-to-design demo, and assistant so every obvious click is meaningful without placeholder routes.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+DragonCraft AI helps founders turn a rough idea into a distinctive brand world. The landing experience includes realm selection, logo and web builder entry points, voice-to-design, QR business card preview, Dragon Battle comparison, gallery lightbox, tiered access preview, Google sign-in mock, WhatsApp support, and a floating forge guide.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Use DragonCraft AI / Dragon Realm Services naming, cyber-anime sunset styling, neon magenta/orange/purple/cream palette, and gamified dragon motifs.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- The current Google sign-in, generation, export, and tier checkout actions are intentionally UI flows; connect Supabase/Google OAuth and persistence before treating them as production authentication or billing.
 
 ## Pointers
 
