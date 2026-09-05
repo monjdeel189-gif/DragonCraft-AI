@@ -213,6 +213,9 @@
 .dc-modal-backdrop { background: rgba(9, 3, 21, .78); backdrop-filter: blur(12px); }
 .dc-input { width: 100%; background: rgba(10, 4, 25, .42); border: 1px solid rgba(255, 242, 213, .16); color: var(--dc-cream); outline: none; transition: border-color .2s; }
 .dc-input:focus { border-color: var(--dc-pink); }
+/* Keep Replit's development-only banner from covering the product surface. */
+#replit-dev-banner { display: none !important; }
+body[style*='padding-top'] { padding-top: 0 !important; }
 @media (max-width: 767px) {
   .dc-section { width: min(100% - 28px, 1160px); }
   .dc-noise::after { opacity: .025; }
