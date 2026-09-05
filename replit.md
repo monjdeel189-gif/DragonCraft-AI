@@ -35,7 +35,7 @@ Cyber-anime creative studio for forging brand identities, landing pages, and lau
 
 ## Product
 
-DragonCraft AI helps founders turn a rough idea into a distinctive brand world. The landing experience includes realm selection, logo and web builder entry points, voice-to-design, QR business card preview, Dragon Battle comparison, gallery lightbox, tiered access preview, Google sign-in mock, WhatsApp support, and a floating forge guide.
+DragonCraft AI helps founders turn a rough idea into a distinctive brand world. The landing experience includes realm selection, logo and web builder entry points, voice-to-design, QR business card preview, Dragon Battle comparison, gallery lightbox, tiered access preview, email/password sign-in, WhatsApp support, and a floating forge guide.
 
 ## User preferences
 
@@ -43,7 +43,7 @@ DragonCraft AI helps founders turn a rough idea into a distinctive brand world. 
 
 ## Gotchas
 
-- Google OAuth is invoked through Supabase Auth from the browser. Enable the Google provider and add the preview/deployed callback URLs in Supabase Auth URL Configuration before testing sign-in outside the local preview.
+- Email/password authentication is invoked through Supabase Auth from the browser. Enable email signups and configure email confirmation/redirect URLs in Supabase Auth before testing account creation outside the local preview.
 
 ## Pointers
 

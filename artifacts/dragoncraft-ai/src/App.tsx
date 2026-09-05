@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowDownRight,
@@ -13,7 +13,6 @@ import {
   Download,
   ExternalLink,
   Flame,
-  Globe2,
   Layers3,
   LockKeyhole,
   Mic,
@@ -409,13 +408,17 @@ function PricingSection({ onChoose }: { onChoose: (plan: string) => void }) {
   return <section id="pricing" className="relative py-24 sm:py-32"><div className="dc-section"><Reveal><div className="flex flex-col justify-between gap-5 md:flex-row md:items-end"><div><p className="dc-kicker">06 / The offering</p><h2 className="mt-4 font-display text-4xl font-bold tracking-[-.06em] text-[#fff2d5] sm:text-6xl">Choose your<br /><span className="text-[#a89bbf]">starting spell.</span></h2></div><div className="flex items-center gap-2 rounded-full border border-[#79dbd1]/25 bg-[#79dbd1]/[.06] px-3 py-2 font-mono text-[9px] uppercase tracking-[.11em] text-[#79dbd1]"><LockKeyhole size={12} /> No card for the first flight</div></div></Reveal><div className="mx-auto mt-12 grid max-w-[920px] items-start gap-4 md:grid-cols-2">{plans.map((plan, index) => <Reveal key={plan.name} delay={index * .09}><div className={`relative rounded-3xl border p-6 sm:p-7 ${plan.featured ? 'border-[#f20f75]/70 bg-gradient-to-b from-[#63205e] to-[#2b1253] shadow-[0_20px_70px_rgba(242,15,117,.16)] md:-mt-5 md:pb-9' : 'border-[#fff2d5]/13 bg-[#2b1253]/32'}`}>{plan.featured && <div className="absolute -top-3 left-6 rounded-full bg-[#ffc857] px-3 py-1 font-mono text-[9px] font-bold uppercase tracking-[.12em] text-[#180c31]">Full access key</div>}<div className="flex items-start justify-between"><div><p className="font-mono text-[10px] uppercase tracking-[.15em] text-[#a89bbf]">{plan.name}</p><p className="mt-4 font-display text-4xl text-[#fff2d5]">{plan.price}<span className="font-sans text-sm text-[#a89bbf]">{plan.price !== 'Free' && ' / year'}</span></p></div><div className={`rounded-full p-2 ${plan.featured ? 'bg-[#f20f75]/20 text-[#ff7058]' : 'bg-[#fff2d5]/[.07] text-[#ffc857]'}`}><Zap size={16} /></div></div><p className="mt-5 min-h-12 text-sm leading-6 text-[#a89bbf]">{plan.copy}</p><div className="my-6 h-px bg-[#fff2d5]/10" /><ul className="space-y-3">{plan.features.map((feature) => <li key={feature} className="flex items-center gap-2 text-sm text-[#e1d7e3]"><Check size={14} className="text-[#79dbd1]" />{feature}</li>)}</ul><button onClick={() => onChoose(plan.name)} className={`mt-8 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-[.12em] ${plan.featured ? 'dc-btn-primary' : 'dc-btn-secondary'}`} data-testid={`button-pricing-${plan.name.toLowerCase().replaceAll(' ', '-')}`}>{plan.action} <ArrowRight size={14} /></button></div></Reveal>)}</div></div></section>;
 }
 
+type AuthMode = 'signin' | 'signup';
+
 function SignInModal({
   onClose,
   onForge,
   session,
   loading,
   error,
-  onGoogleSignIn,
+  notice,
+  onEmailPasswordAuth,
+  onClearAuthMessage,
   onSignOut,
 }: {
   onClose: () => void;
@@ -423,11 +426,150 @@ function SignInModal({
   session: Session | null;
   loading: boolean;
   error: string;
-  onGoogleSignIn: () => void;
+  notice: string;
+  onEmailPasswordAuth: (credentials: { email: string; password: string; mode: AuthMode }) => void;
+  onClearAuthMessage: () => void;
   onSignOut: () => void;
 }) {
+  const [mode, setMode] = useState<AuthMode>('signin');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const displayName = session?.user.user_metadata?.full_name || session?.user.email || 'DragonCraft member';
-  return <div className="dc-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="signin-title" onMouseDown={(event) => event.target === event.currentTarget && onClose()}><motion.div initial={{ opacity: 0, scale: .96, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="dc-glass-strong relative w-full max-w-[430px] rounded-3xl p-7 sm:p-9"><button onClick={onClose} className="absolute right-4 top-4 rounded-lg p-2 text-[#a89bbf] hover:bg-[#fff2d5]/10 hover:text-[#fff2d5]" aria-label="Close sign in" data-testid="button-close-sign-in"><X size={17} /></button><DragonMark /><p className="dc-kicker mt-7">{session ? 'Your signal is synced' : 'Your realm is waiting'}</p><h2 id="signin-title" className="mt-3 font-display text-3xl font-bold tracking-[-.05em] text-[#fff2d5]">{session ? 'Welcome back.' : 'Enter the forge.'}</h2><p className="mt-3 text-sm leading-6 text-[#a89bbf]">{session ? `Signed in as ${displayName}. Your protected tools are unlocked.` : 'Sign in with Google to save your realms, keep your sparks, and use the AI forge.'}</p>{session ? <div className="mt-7 rounded-2xl border border-[#79dbd1]/25 bg-[#79dbd1]/[.08] p-5" data-testid="status-signed-in"><CheckCircle2 className="text-[#79dbd1]" size={23} /><p className="mt-3 font-display text-lg text-[#fff2d5]">Access granted.</p><p className="mt-1 text-sm text-[#a89bbf]">Your Logo Forge, Web Architect, voice tools, and Forge Guide are ready.</p><div className="mt-5 flex gap-2"><button onClick={onForge} className="dc-btn-primary flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 font-mono text-[10px] uppercase tracking-[.12em]" data-testid="button-signed-in-start-forge">Open the forge <ArrowRight size={13} /></button><button onClick={onSignOut} className="rounded-xl border border-[#fff2d5]/20 px-4 py-3 font-mono text-[10px] uppercase tracking-[.12em] text-[#a89bbf] hover:text-[#fff2d5]" data-testid="button-sign-out">Sign out</button></div></div> : <><button onClick={onGoogleSignIn} disabled={loading} className="mt-7 flex w-full items-center justify-center gap-3 rounded-xl border border-[#fff2d5]/20 bg-[#fff2d5]/[.07] px-4 py-3.5 font-mono text-[10px] uppercase tracking-[.12em] text-[#fff2d5] transition-colors hover:bg-[#fff2d5]/[.12] disabled:cursor-wait disabled:opacity-60" data-testid="button-google-sign-in"><Globe2 size={16} /> {loading ? 'Connecting to Google...' : 'Continue with Google'}</button>{error && <p className="mt-4 rounded-xl border border-[#ff7058]/30 bg-[#ff7058]/[.08] p-3 text-xs leading-5 text-[#ffb29c]" role="alert" data-testid="status-auth-error">{error}</p>}<p className="mt-5 text-center font-mono text-[9px] leading-5 text-[#77698e]">Google sign-in is required before using DragonCraft AI generation tools.</p></>}</motion.div></div>;
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    onEmailPasswordAuth({ email: email.trim(), password, mode });
+  };
+
+  const changeMode = (nextMode: AuthMode) => {
+    setMode(nextMode);
+    onClearAuthMessage();
+  };
+
+  return (
+    <div
+      className="dc-modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="signin-title"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="dc-glass-strong relative w-full max-w-[430px] rounded-3xl p-7 sm:p-9"
+      >
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 rounded-lg p-2 text-[#a89bbf] hover:bg-[#fff2d5]/10 hover:text-[#fff2d5]"
+          aria-label="Close sign in"
+          data-testid="button-close-sign-in"
+        >
+          <X size={17} />
+        </button>
+        <DragonMark />
+        <p className="dc-kicker mt-7">{session ? 'Your signal is synced' : 'Your realm is waiting'}</p>
+        <h2 id="signin-title" className="mt-3 font-display text-3xl font-bold tracking-[-.05em] text-[#fff2d5]">
+          {session ? 'Welcome back.' : mode === 'signin' ? 'Enter the forge.' : 'Create your account.'}
+        </h2>
+        <p className="mt-3 text-sm leading-6 text-[#a89bbf]">
+          {session
+            ? `Signed in as ${displayName}. Your protected tools are unlocked.`
+            : 'Use your email and password to save your realms, keep your sparks, and use the AI forge.'}
+        </p>
+        {session ? (
+          <div className="mt-7 rounded-2xl border border-[#79dbd1]/25 bg-[#79dbd1]/[.08] p-5" data-testid="status-signed-in">
+            <CheckCircle2 className="text-[#79dbd1]" size={23} />
+            <p className="mt-3 font-display text-lg text-[#fff2d5]">Access granted.</p>
+            <p className="mt-1 text-sm text-[#a89bbf]">Your Logo Forge, Web Architect, voice tools, and Forge Guide are ready.</p>
+            <div className="mt-5 flex gap-2">
+              <button onClick={onForge} className="dc-btn-primary flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 font-mono text-[10px] uppercase tracking-[.12em]" data-testid="button-signed-in-start-forge">
+                Open the forge <ArrowRight size={13} />
+              </button>
+              <button onClick={onSignOut} className="rounded-xl border border-[#fff2d5]/20 px-4 py-3 font-mono text-[10px] uppercase tracking-[.12em] text-[#a89bbf] hover:text-[#fff2d5]" data-testid="button-sign-out">
+                Sign out
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="mt-7 grid grid-cols-2 rounded-xl border border-[#fff2d5]/12 bg-[#10071f]/35 p-1" role="tablist" aria-label="Account access mode">
+              <button
+                type="button"
+                onClick={() => changeMode('signin')}
+                className={`rounded-lg px-3 py-2.5 font-mono text-[10px] uppercase tracking-[.1em] ${mode === 'signin' ? 'bg-[#ffc857]/15 text-[#ffc857]' : 'text-[#a89bbf] hover:text-[#fff2d5]'}`}
+                role="tab"
+                aria-selected={mode === 'signin'}
+                data-testid="button-auth-sign-in-mode"
+              >
+                Sign in
+              </button>
+              <button
+                type="button"
+                onClick={() => changeMode('signup')}
+                className={`rounded-lg px-3 py-2.5 font-mono text-[10px] uppercase tracking-[.1em] ${mode === 'signup' ? 'bg-[#ffc857]/15 text-[#ffc857]' : 'text-[#a89bbf] hover:text-[#fff2d5]'}`}
+                role="tab"
+                aria-selected={mode === 'signup'}
+                data-testid="button-auth-sign-up-mode"
+              >
+                Create account
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+              <label className="block">
+                <span className="font-mono text-[9px] uppercase tracking-[.12em] text-[#a89bbf]">Email address</span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  autoComplete="email"
+                  required
+                  className="dc-input mt-2 rounded-xl px-4 py-3 text-sm"
+                  placeholder="you@example.com"
+                  data-testid="input-auth-email"
+                />
+              </label>
+              <label className="block">
+                <span className="font-mono text-[9px] uppercase tracking-[.12em] text-[#a89bbf]">Password</span>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+                  minLength={6}
+                  required
+                  className="dc-input mt-2 rounded-xl px-4 py-3 text-sm"
+                  placeholder="At least 6 characters"
+                  data-testid="input-auth-password"
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={loading}
+                className="dc-btn-primary flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3.5 font-mono text-[10px] font-bold uppercase tracking-[.12em] disabled:cursor-wait disabled:opacity-60"
+                data-testid="button-email-auth"
+              >
+                {loading ? 'Opening your realm...' : mode === 'signin' ? 'Sign in with email' : 'Create account'} <ArrowRight size={14} />
+              </button>
+            </form>
+            {error && (
+              <p className="mt-4 rounded-xl border border-[#ff7058]/30 bg-[#ff7058]/[.08] p-3 text-xs leading-5 text-[#ffb29c]" role="alert" data-testid="status-auth-error">
+                {error}
+              </p>
+            )}
+            {notice && (
+              <p className="mt-4 rounded-xl border border-[#79dbd1]/25 bg-[#79dbd1]/[.08] p-3 text-xs leading-5 text-[#b7fff3]" role="status" data-testid="status-auth-notice">
+                {notice}
+              </p>
+            )}
+            <p className="mt-5 text-center font-mono text-[9px] leading-5 text-[#77698e]">
+              Email and password are the only available sign-in method for DragonCraft AI.
+            </p>
+          </>
+        )}
+      </motion.div>
+    </div>
+  );
 }
 
 function ForgeModal({ realm, onClose, onSelectRealm }: { realm: Realm; onClose: () => void; onSelectRealm: (realm: Realm) => void }) {
@@ -631,6 +773,7 @@ function Home() {
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState('');
+  const [authNotice, setAuthNotice] = useState('');
   const [signInOpen, setSignInOpen] = useState(false);
   const [forgeOpen, setForgeOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
@@ -649,15 +792,15 @@ function Home() {
     if (intent === 'forge') {
       setForgeOpen(true);
     } else if (intent === 'trial') {
-      setToast('Google verified — your 60-day flight is ready.');
+      setToast('Email verified — your 60-day flight is ready.');
       document.getElementById('hero')?.scrollIntoView({ behavior: 'smooth' });
     } else if (intent === 'studio') {
-      setToast('Google verified — the Signal Forge is unlocked.');
+      setToast('Email verified — the Signal Forge is unlocked.');
       document.getElementById('studio')?.scrollIntoView({ behavior: 'smooth' });
     } else if (intent === 'voice') {
-      setToast('Google verified — Voice-to-Design is unlocked.');
+      setToast('Email verified — Voice-to-Design is unlocked.');
     } else {
-      setToast('Google verified — Forge Guide is unlocked.');
+      setToast('Email verified — Forge Guide is unlocked.');
     }
   };
 
@@ -691,6 +834,7 @@ function Home() {
   const openSignIn = () => {
     window.sessionStorage.removeItem('dragoncraft-auth-intent');
     setAuthError('');
+    setAuthNotice('');
     setSignInOpen(true);
   };
 
@@ -701,21 +845,42 @@ function Home() {
     }
     window.sessionStorage.setItem('dragoncraft-auth-intent', intent);
     setAuthError('');
+    setAuthNotice('');
     setSignInOpen(true);
   };
 
-  const handleGoogleSignIn = async () => {
+  const handleEmailPasswordAuth = async ({
+    email,
+    password,
+    mode,
+  }: {
+    email: string;
+    password: string;
+    mode: AuthMode;
+  }) => {
     setAuthError('');
+    setAuthNotice('');
     setAuthLoading(true);
     const redirectUrl = new URL(window.location.href);
     redirectUrl.search = '';
     redirectUrl.hash = '';
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: redirectUrl.toString() },
-    });
+    const result = mode === 'signup'
+      ? await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: redirectUrl.toString() },
+        })
+      : await supabase.auth.signInWithPassword({ email, password });
+
+    const { data, error } = result;
     if (error) {
       setAuthError(error.message);
+      setAuthLoading(false);
+      return;
+    }
+
+    if (mode === 'signup' && !data.session) {
+      setAuthNotice('Account created. Check your email to confirm your address, then return here to enter the forge.');
       setAuthLoading(false);
     }
   };
@@ -759,7 +924,7 @@ function Home() {
     <a href="https://wa.me/213652742367?text=Hello%20DragonCraft%20Team%21%20I%20need%20support%20with%20my%20project." target="_blank" rel="noreferrer" className="fixed bottom-5 left-4 z-30 flex items-center gap-2 rounded-full border border-[#79dbd1]/30 bg-[#173f46]/85 px-3 py-2.5 text-[#79dbd1] shadow-lg backdrop-blur-md transition-transform hover:-translate-y-1 sm:bottom-7 sm:left-7" data-testid="link-whatsapp-support"><MessageCircle size={16} /><span className="hidden font-mono text-[9px] uppercase tracking-[.1em] sm:inline">Talk to a human</span></a>
     <Assistant requireAccess={(action) => requestAuth('assistant', action)} />
     {toast && <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-full border border-[#ffc857]/35 bg-[#2b1253] px-4 py-3 font-mono text-[10px] uppercase tracking-[.08em] text-[#ffc857] shadow-lg" data-testid="status-toast">{toast}</motion.div>}
-    <AnimatePresence>{signInOpen && <SignInModal session={session} loading={authLoading} error={authError} onGoogleSignIn={handleGoogleSignIn} onSignOut={handleSignOut} onClose={() => setSignInOpen(false)} onForge={() => { setSignInOpen(false); requestAuth('forge', () => setForgeOpen(true)); }} />}</AnimatePresence>
+    <AnimatePresence>{signInOpen && <SignInModal session={session} loading={authLoading} error={authError} notice={authNotice} onEmailPasswordAuth={handleEmailPasswordAuth} onClearAuthMessage={() => { setAuthError(''); setAuthNotice(''); }} onSignOut={handleSignOut} onClose={() => setSignInOpen(false)} onForge={() => { setSignInOpen(false); requestAuth('forge', () => setForgeOpen(true)); }} />}</AnimatePresence>
     <AnimatePresence>{forgeOpen && <ForgeModal realm={activeRealm} onClose={() => setForgeOpen(false)} onSelectRealm={setActiveRealm} />}</AnimatePresence>
     <AnimatePresence>{galleryIndex !== null && <GalleryModal index={galleryIndex} onClose={() => setGalleryIndex(null)} onMove={setGalleryIndex} />}</AnimatePresence>
   </div>;
