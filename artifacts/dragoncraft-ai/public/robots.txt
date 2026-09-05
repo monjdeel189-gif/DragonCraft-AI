@@ -1,2 +1,3 @@
 User-agent: *
 Allow: /
+Sitemap: https://dragon-craft-ai--monjdeel189.replit.app/sitemap.xml

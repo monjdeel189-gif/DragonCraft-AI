@@ -1,0 +1,1 @@
+- [Vite HTML head assets](vite-html-head-assets.md) — use verified absolute canonical URLs; root-relative head URLs can break production Vite builds.

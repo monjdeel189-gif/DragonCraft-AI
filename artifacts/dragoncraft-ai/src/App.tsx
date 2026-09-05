@@ -707,9 +707,12 @@ function Home() {
   const handleGoogleSignIn = async () => {
     setAuthError('');
     setAuthLoading(true);
+    const redirectUrl = new URL(window.location.href);
+    redirectUrl.search = '';
+    redirectUrl.hash = '';
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.href },
+      options: { redirectTo: redirectUrl.toString() },
     });
     if (error) {
       setAuthError(error.message);

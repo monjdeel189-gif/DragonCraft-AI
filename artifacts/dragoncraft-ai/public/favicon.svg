@@ -1,3 +1,14 @@
 <svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="180" height="180" rx="36" fill="#FF3C00"/>
+<defs>
+  <linearGradient id="bg" x1="18" y1="14" x2="164" y2="168" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#5B208A"/>
+    <stop offset=".55" stop-color="#F20F75"/>
+    <stop offset="1" stop-color="#FF7058"/>
+  </linearGradient>
+</defs>
+<rect width="180" height="180" rx="38" fill="#180C31"/>
+<rect x="9" y="9" width="162" height="162" rx="32" fill="url(#bg)" opacity=".92"/>
+<path d="M47 128c12-25 22-42 40-51 10-5 16-14 18-27 18 13 27 30 27 49 0 31-23 52-56 52-12 0-21-2-29-6Z" fill="#180C31" fill-opacity=".38" stroke="#FFF2D5" stroke-width="7" stroke-linejoin="round"/>
+<path d="M72 108c17-2 30-9 42-22M102 61l20-16-2 27M51 130l-20 12" stroke="#FFC857" stroke-width="6" stroke-linecap="round"/>
+<circle cx="110" cy="77" r="4" fill="#FFC857"/>
 </svg>
